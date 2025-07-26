@@ -33,6 +33,8 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
 
     const img = new Image();
     img.onload = () => {
+      console.log('Image loaded successfully:', { width: img.width, height: img.height });
+      
       // Set canvas dimensions to image dimensions
       const maxWidth = 800;
       const maxHeight = 600;
@@ -43,6 +45,8 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
         width *= ratio;
         height *= ratio;
       }
+
+      console.log('Canvas dimensions set to:', { width, height });
 
       canvas.width = width;
       canvas.height = height;
@@ -58,6 +62,11 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
       setImageLoaded(true);
       saveToHistory();
       toast.success("Image loaded! Start painting areas to modify.");
+    };
+
+    img.onerror = (error) => {
+      console.error('Failed to load image:', error);
+      toast.error("Failed to load image. Please try again.");
     };
 
     img.src = URL.createObjectURL(uploadedImage);
@@ -289,22 +298,32 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
 
       {/* Canvas Container */}
       <Card className="p-4">
-        <div className="relative bg-canvas-bg rounded-lg overflow-hidden">
+        <div className="relative bg-canvas-bg rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
+          {!imageLoaded && uploadedImage && (
+            <div className="text-center text-muted-foreground">
+              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+              Loading image...
+            </div>
+          )}
           <canvas
             ref={canvasRef}
-            className="absolute inset-0 cursor-crosshair"
-            style={{ cursor: tool === 'brush' ? 'crosshair' : 'grab' }}
+            className="max-w-full max-h-full"
+            style={{ 
+              display: imageLoaded ? 'block' : 'none',
+              cursor: tool === 'brush' ? 'crosshair' : 'grab' 
+            }}
           />
           <canvas
             ref={maskCanvasRef}
-            className="absolute inset-0 pointer-events-none"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-full max-h-full"
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
             style={{ 
               cursor: tool === 'brush' ? 'crosshair' : 'grab',
-              pointerEvents: imageLoaded ? 'auto' : 'none'
+              pointerEvents: imageLoaded ? 'auto' : 'none',
+              display: imageLoaded ? 'block' : 'none'
             }}
           />
         </div>
