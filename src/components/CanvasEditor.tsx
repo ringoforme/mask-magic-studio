@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
-import { Brush, Eraser, Undo, Redo, RotateCcw } from "lucide-react";
+import { Brush, Eraser, Undo, Redo, RotateCcw, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface CanvasEditorProps {
@@ -19,6 +19,7 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [currentMaskDataUrl, setCurrentMaskDataUrl] = useState<string | null>(null);
 
   // Load image onto canvas
   useEffect(() => {
@@ -169,7 +170,9 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
     }
     
     binaryCtx.putImageData(binaryImageData, 0, 0);
-    onMaskGenerated(binaryCanvas.toDataURL());
+    const maskDataUrl = binaryCanvas.toDataURL();
+    setCurrentMaskDataUrl(maskDataUrl);
+    onMaskGenerated(maskDataUrl);
   }, [onMaskGenerated]);
 
   // Mouse event handlers
@@ -218,6 +221,22 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
     saveToHistory();
     generateMask();
   }, [isDrawing, saveToHistory, generateMask]);
+
+  // Download mask function
+  const downloadMask = useCallback(() => {
+    if (!currentMaskDataUrl) {
+      toast.error("No mask to download. Please paint on the image first.");
+      return;
+    }
+    
+    const link = document.createElement('a');
+    link.download = 'mask.png';
+    link.href = currentMaskDataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Mask downloaded successfully!");
+  }, [currentMaskDataUrl]);
 
   if (!uploadedImage) {
     return (
@@ -290,6 +309,15 @@ export const CanvasEditor = ({ uploadedImage, onMaskGenerated }: CanvasEditorPro
                 onClick={clearMask}
               >
                 <RotateCcw className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={downloadMask}
+                disabled={!currentMaskDataUrl}
+                title="Download Mask"
+              >
+                <Download className="w-4 h-4" />
               </Button>
             </div>
           </div>
